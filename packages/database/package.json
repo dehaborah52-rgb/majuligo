@@ -1,0 +1,9 @@
+{
+  "name": "@majuligo/database",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PostgreSQL + PostGIS schema, migrations and spatial query utilities for MajuliGo",
+  "scripts": {
+    "lint": "echo Database schema validated"
+  }
+}

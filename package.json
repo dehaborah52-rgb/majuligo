@@ -1,0 +1,23 @@
+{
+  "name": "majuligo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MajuliGo - Production-ready bike-taxi platform for Majuli, Assam and India",
+  "license": "UNLICENSED",
+  "author": "MajuliGo Team",
+  "scripts": {
+    "build": "pnpm --recursive run build",
+    "test": "pnpm --recursive run test",
+    "lint": "pnpm --recursive run lint",
+    "dev:backend": "pnpm --filter @majuligo/backend dev",
+    "dev:admin": "pnpm --filter @majuligo/admin dev",
+    "dev:rider": "pnpm --filter @majuligo/rider-app start",
+    "dev:captain": "pnpm --filter @majuligo/captain-app start",
+    "clean": "pnpm --recursive exec rimraf dist .turbo .next .expo node_modules"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "rimraf": "^6.0.1"
+  },
+  "packageManager": "pnpm@11.13.1"
+}

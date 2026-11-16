@@ -1,0 +1,20 @@
+{
+  "name": "@majuligo/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared domain models, types, constants and Zod validation schemas for MajuliGo",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test --test-reporter=spec dist/test.js",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.2"
+  }
+}

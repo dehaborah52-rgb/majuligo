@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 160" width="100%" height="100%">
+  <defs>
+    <linearGradient id="amberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Background Pill -->
+  <rect width="600" height="160" rx="24" fill="#0F172A" />
+
+  <!-- Logo Icon Container -->
+  <g transform="translate(30, 24)" filter="url(#shadow)">
+    <!-- Shield / Hexagon base -->
+    <rect width="112" height="112" rx="28" fill="url(#amberGrad)" />
+    
+    <!-- Island River Water Wave Motif -->
+    <path d="M 16 88 C 36 78, 56 94, 96 82" stroke="#0F172A" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.3" />
+    
+    <!-- Stylized Modern Bike & Rider Silhouette -->
+    <!-- Rear Wheel -->
+    <circle cx="38" cy="74" r="14" stroke="#0F172A" stroke-width="5" fill="none" />
+    <!-- Front Wheel -->
+    <circle cx="82" cy="74" r="14" stroke="#0F172A" stroke-width="5" fill="none" />
+    
+    <!-- Bike Frame & Fork -->
+    <path d="M 38 74 L 56 60 L 76 74 M 56 60 L 70 42 L 82 74" stroke="#0F172A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    
+    <!-- Rider Torso & Arms -->
+    <path d="M 50 48 L 62 42 L 72 45" stroke="#0F172A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    
+    <!-- Rider Helmet -->
+    <circle cx="66" cy="33" r="7" fill="#0F172A" />
+    
+    <!-- Speed Motion Accent -->
+    <path d="M 20 52 L 32 52 M 16 62 L 26 62" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" />
+  </g>
+
+  <!-- Brand Typography -->
+  <g transform="translate(170, 78)">
+    <!-- "Majuli" -->
+    <text font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="52" font-weight="900" fill="#FFFFFF" letter-spacing="-1">
+      Majuli
+    </text>
+    <!-- "Go" -->
+    <text x="168" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="52" font-weight="900" fill="url(#amberGrad)" letter-spacing="-1">
+      Go
+    </text>
+  </g>
+
+  <!-- Tagline & Badge -->
+  <g transform="translate(172, 114)">
+    <text font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" font-weight="600" fill="#94A3B8" letter-spacing="1.5">
+      MAJULI’S TRUSTED BIKE TAXI NETWORK
+    </text>
+  </g>
+
+  <!-- Location Badge -->
+  <g transform="translate(500, 36)">
+    <rect width="68" height="24" rx="12" fill="#1E293B" stroke="#334155" stroke-width="1" />
+    <circle cx="512" cy="48" r="4" fill="#10B981" />
+    <text x="522" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="700" fill="#E2E8F0" letter-spacing="0.5">
+      ASSAM
+    </text>
+  </g>
+</svg>
