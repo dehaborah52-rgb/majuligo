@@ -9,102 +9,249 @@ import {
   StatusBar,
   Switch,
 } from 'react-native';
-import { BRAND_NAME, BRAND_TAGLINE } from '@majuligo/shared';
-import { THEME } from './src/constants/theme';
+import {
+  BRAND_NAME,
+  DESIGN_TOKENS,
+  translate,
+} from '@majuligo/shared';
+import { Button, Card, Badge, OfflineBanner } from './src/components';
+import { CaptainAuthScreen } from './src/screens/CaptainAuthScreen';
+import {
+  RideRequestRadarModal,
+  RideRequestData,
+} from './src/screens/RideRequestRadarModal';
+import { ActiveTripScreen } from './src/screens/ActiveTripScreen';
+import { EarningsScreen } from './src/screens/EarningsScreen';
+
+type CaptainFlowScreen = 'AUTH' | 'DASHBOARD' | 'ACTIVE_TRIP' | 'EARNINGS';
 
 export default function App() {
-  const [isOnline, setIsOnline] = useState(false);
+  const [currentScreen, setCurrentScreen] = useState<CaptainFlowScreen>('DASHBOARD');
+  const [captainPhone, setCaptainPhone] = useState<string | null>('9876543210');
+  const [isOnline, setIsOnline] = useState(true);
+  const [isOfflineNet, setIsOfflineNet] = useState(false);
+
+  // Incoming Ride Request State (Simulated radar match)
+  const [incomingRequest, setIncomingRequest] = useState<RideRequestData | null>(null);
+
+  // Active Trip State
+  const [activeRide, setActiveRide] = useState<RideRequestData | null>(null);
+
+  const handleSimulateIncomingRide = () => {
+    if (!isOnline) {
+      alert('You must be ONLINE to receive incoming ride requests!');
+      return;
+    }
+    setIncomingRequest({
+      rideId: 'RD-7492',
+      pickupName: 'Kamalabari Ghat, Ferry Terminal',
+      destinationName: 'Garamur Satra, Main Road',
+      distanceToPickupKm: 1.2,
+      tripDistanceKm: 8.5,
+      captainEarnings: 106,
+    });
+  };
+
+  const handleAcceptRide = (_rideId: string) => {
+    const accepted = incomingRequest;
+    setIncomingRequest(null);
+    if (accepted) {
+      setActiveRide(accepted);
+      setCurrentScreen('ACTIVE_TRIP');
+    }
+  };
+
+  const handleRejectRide = (_rideId: string) => {
+    setIncomingRequest(null);
+  };
+
+  const handleTripCompleted = () => {
+    setActiveRide(null);
+    setCurrentScreen('EARNINGS');
+  };
+
+  if (currentScreen === 'AUTH') {
+    return (
+      <CaptainAuthScreen
+        onSuccess={(phone) => {
+          setCaptainPhone(phone);
+          setCurrentScreen('DASHBOARD');
+        }}
+      />
+    );
+  }
+
+  if (currentScreen === 'EARNINGS') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor={DESIGN_TOKENS.colors.background} />
+        <EarningsScreen onBack={() => setCurrentScreen('DASHBOARD')} />
+      </SafeAreaView>
+    );
+  }
+
+  if (currentScreen === 'ACTIVE_TRIP' && activeRide) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor={DESIGN_TOKENS.colors.background} />
+        <ActiveTripScreen
+          rideId={activeRide.rideId}
+          riderName="Pranjal Saikia"
+          pickupName={activeRide.pickupName}
+          destinationName={activeRide.destinationName}
+          earningsAmount={activeRide.captainEarnings}
+          expectedOtp="5821"
+          onTripCompleted={handleTripCompleted}
+          onCancelTrip={() => {
+            setActiveRide(null);
+            setCurrentScreen('DASHBOARD');
+          }}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={THEME.colors.background} />
+      <StatusBar barStyle="light-content" backgroundColor={DESIGN_TOKENS.colors.background} />
+      <OfflineBanner isOffline={isOfflineNet} />
+
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.logoBadge}>
-            <Text style={styles.logoText}>M</Text>
+          <View style={styles.brandRow}>
+            <View style={styles.logoBadge}>
+              <Text style={styles.logoText}>M</Text>
+            </View>
+            <View>
+              <Text style={styles.brandTitle}>
+                {BRAND_NAME}{' '}
+                <Text style={{ color: DESIGN_TOKENS.colors.secondary }}>Captain</Text>
+              </Text>
+              <Text style={styles.brandSub}>Majuli District Fleet</Text>
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.brandTitle}>
-              {BRAND_NAME} <Text style={{ color: THEME.colors.primary }}>Captain</Text>
+          <TouchableOpacity
+            style={styles.profileBadge}
+            onPress={() => setCurrentScreen('AUTH')}
+          >
+            <Text style={styles.profileText}>
+              {captainPhone ? `+91 ${captainPhone.slice(-4)}` : 'Auth'}
             </Text>
-            <Text style={styles.brandTagline}>{BRAND_TAGLINE}</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
-        {/* Online / Offline Status Toggle Card */}
-        <View style={[styles.card, isOnline ? styles.cardOnline : styles.cardOffline]}>
+        {/* Online / Offline Toggle Card */}
+        <Card
+          elevated
+          style={[
+            styles.statusCard,
+            isOnline ? styles.cardOnline : styles.cardOffline,
+          ]}
+        >
           <View style={styles.toggleRow}>
-            <View>
-              <Text style={styles.statusLabel}>Availability</Text>
-              <Text style={styles.statusHeading}>
-                {isOnline ? 'YOU ARE ONLINE' : 'YOU ARE OFFLINE'}
-              </Text>
-              <Text style={styles.statusSubtext}>
+            <View style={styles.toggleTextGroup}>
+              <Text style={styles.statusLabel}>{translate('availability', 'en')}</Text>
+              <Text style={styles.statusHeadline}>
                 {isOnline
-                  ? 'Listening for ride requests in Majuli...'
-                  : 'Go online to receive nearby ride requests'}
+                  ? translate('onlineStatus', 'en')
+                  : translate('offlineStatus', 'en')}
+              </Text>
+              <Text style={styles.statusSub}>
+                {isOnline
+                  ? translate('onlineDesc', 'en')
+                  : translate('offlineDesc', 'en')}
               </Text>
             </View>
             <Switch
               value={isOnline}
               onValueChange={setIsOnline}
-              trackColor={{ false: '#475569', true: THEME.colors.online }}
+              trackColor={{ false: '#475569', true: DESIGN_TOKENS.colors.secondary }}
               thumbColor="#FFFFFF"
             />
           </View>
-        </View>
+        </Card>
 
-        {/* Today's Earnings Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardHeading}>Today's Earnings</Text>
-          <Text style={styles.earningsValue}>₹840</Text>
+        {/* Today's Earnings Snapshot */}
+        <Card style={styles.earningsCard}>
+          <View style={styles.earningsHeader}>
+            <Text style={styles.cardHeading}>{translate('todayEarnings', 'en')}</Text>
+            <TouchableOpacity onPress={() => setCurrentScreen('EARNINGS')}>
+              <Text style={styles.viewHistoryLink}>Full History →</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.earningsAmount}>₹840</Text>
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
-              <Text style={styles.statNumber}>8</Text>
-              <Text style={styles.statLabel}>Completed</Text>
+              <Text style={styles.statVal}>8</Text>
+              <Text style={styles.statLbl}>{translate('completedTrips', 'en')}</Text>
             </View>
+            <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statNumber}>3.8 hrs</Text>
-              <Text style={styles.statLabel}>Online Time</Text>
+              <Text style={styles.statVal}>3.8 hrs</Text>
+              <Text style={styles.statLbl}>Online Time</Text>
             </View>
+            <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statNumber}>4.9 ★</Text>
-              <Text style={styles.statLabel}>Rating</Text>
+              <Text style={styles.statVal}>4.9 ★</Text>
+              <Text style={styles.statLbl}>Rating</Text>
             </View>
           </View>
-        </View>
+        </Card>
 
-        {/* Active Dispatch Radar */}
-        <View style={styles.card}>
-          <Text style={styles.cardHeading}>Dispatch Radar</Text>
+        {/* Dispatch Radar View */}
+        <Card style={styles.radarCard}>
+          <Text style={styles.cardHeading}>ISLAND DISPATCH RADAR</Text>
           {isOnline ? (
-            <View style={styles.radarActive}>
-              <View style={styles.radarPulse} />
-              <Text style={styles.radarText}>Scanning Kamalabari & Garamur...</Text>
+            <View style={styles.radarActiveBox}>
+              <View style={styles.radarPulseIndicator} />
+              <Text style={styles.radarActiveText}>
+                Active in Kamalabari & Garamur Sector
+              </Text>
+              <Text style={styles.radarSubText}>
+                GPS tracking active at 1-second intervals
+              </Text>
             </View>
           ) : (
-            <Text style={styles.radarMuted}>Switch to online mode to view incoming rides</Text>
-          )}
-        </View>
-
-        {/* Document Status */}
-        <View style={styles.card}>
-          <View style={styles.docHeader}>
-            <Text style={styles.cardHeading}>Verification Status</Text>
-            <View style={styles.badgeApproved}>
-              <Text style={styles.badgeText}>APPROVED</Text>
+            <View style={styles.radarMutedBox}>
+              <Text style={styles.radarMutedText}>
+                You are offline. Switch to Online mode to receive nearby passenger bookings.
+              </Text>
             </View>
-          </View>
-          <Text style={styles.docDetail}>Driving Licence & Bike RC verified</Text>
-        </View>
+          )}
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>MajuliGo Captain Network • Assam</Text>
-          <Text style={styles.footerSub}>Phase 1 Foundation Active</Text>
-        </View>
+          {/* Dev Simulation Button */}
+          <View style={styles.devSimBox}>
+            <Text style={styles.devSimTitle}>DEV SIMULATION CONTROLS</Text>
+            <Button
+              title="📡 Simulate Incoming Ride Request (30s Radar)"
+              variant="outline"
+              size="sm"
+              onPress={handleSimulateIncomingRide}
+            />
+          </View>
+        </Card>
+
+        {/* Verification Status Card */}
+        <Card style={styles.verificationCard}>
+          <View style={styles.verifyRow}>
+            <View>
+              <Text style={styles.cardHeading}>DOCUMENT & VEHICLE STATUS</Text>
+              <Text style={styles.verifyDetail}>Hero Splendor (AS-03-AQ-4219)</Text>
+            </View>
+            <Badge status="APPROVED" label="APPROVED" />
+          </View>
+        </Card>
       </ScrollView>
+
+      {/* 30-Second Ride Request Radar Popup */}
+      {incomingRequest && (
+        <RideRequestRadarModal
+          request={incomingRequest}
+          onAccept={handleAcceptRide}
+          onReject={handleRejectRide}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -112,169 +259,210 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: THEME.colors.background,
+    backgroundColor: DESIGN_TOKENS.colors.background,
   },
   scroll: {
-    padding: THEME.spacing.md,
+    padding: DESIGN_TOKENS.spacing.base,
   },
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: THEME.spacing.sm,
-    marginBottom: THEME.spacing.lg,
-    paddingTop: THEME.spacing.sm,
+    marginBottom: DESIGN_TOKENS.spacing.base,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: DESIGN_TOKENS.spacing.sm,
   },
   logoBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: THEME.borderRadius.md,
-    backgroundColor: THEME.colors.primary,
+    width: 40,
+    height: 40,
+    borderRadius: DESIGN_TOKENS.borderRadius.md,
+    backgroundColor: DESIGN_TOKENS.colors.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoText: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '900',
     color: '#0F172A',
   },
   brandTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: THEME.colors.text,
+    fontSize: DESIGN_TOKENS.typography.fontSize.heading,
+    fontWeight: '900',
+    color: DESIGN_TOKENS.colors.text,
   },
-  brandTagline: {
-    fontSize: 12,
-    color: THEME.colors.textMuted,
+  brandSub: {
+    fontSize: DESIGN_TOKENS.typography.fontSize.caption,
+    color: DESIGN_TOKENS.colors.textMuted,
   },
-  card: {
-    backgroundColor: THEME.colors.card,
-    borderRadius: THEME.borderRadius.lg,
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.md,
+  profileBadge: {
+    paddingHorizontal: DESIGN_TOKENS.spacing.sm,
+    paddingVertical: DESIGN_TOKENS.spacing.xs,
+    borderRadius: DESIGN_TOKENS.borderRadius.pill,
+    backgroundColor: DESIGN_TOKENS.colors.surface,
     borderWidth: 1,
-    borderColor: THEME.colors.border,
+    borderColor: DESIGN_TOKENS.colors.surfaceBorder,
+  },
+  profileText: {
+    fontSize: DESIGN_TOKENS.typography.fontSize.caption,
+    color: DESIGN_TOKENS.colors.textMuted,
+    fontWeight: '600',
+  },
+  statusCard: {
+    padding: DESIGN_TOKENS.spacing.base,
+    borderWidth: 1.5,
   },
   cardOnline: {
-    borderColor: THEME.colors.online,
     backgroundColor: '#064E3B20',
+    borderColor: DESIGN_TOKENS.colors.secondary,
   },
   cardOffline: {
-    borderColor: THEME.colors.border,
+    backgroundColor: DESIGN_TOKENS.colors.surface,
+    borderColor: DESIGN_TOKENS.colors.surfaceBorder,
   },
   toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  toggleTextGroup: {
+    flex: 1,
+    paddingRight: DESIGN_TOKENS.spacing.sm,
+  },
+  statusLabel: {
+    fontSize: DESIGN_TOKENS.typography.fontSize.micro,
+    fontWeight: '700',
+    color: DESIGN_TOKENS.colors.textSubtle,
+    textTransform: 'uppercase',
+  },
+  statusHeadline: {
+    fontSize: DESIGN_TOKENS.typography.fontSize.subheading,
+    fontWeight: '900',
+    color: DESIGN_TOKENS.colors.text,
+    marginTop: 2,
+  },
+  statusSub: {
+    fontSize: DESIGN_TOKENS.typography.fontSize.caption,
+    color: DESIGN_TOKENS.colors.textMuted,
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  earningsCard: {
+    padding: DESIGN_TOKENS.spacing.base,
+  },
+  earningsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  statusLabel: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: THEME.colors.textMuted,
-    textTransform: 'uppercase',
-  },
-  statusHeading: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: THEME.colors.text,
-    marginTop: 2,
-  },
-  statusSubtext: {
-    fontSize: 12,
-    color: THEME.colors.textMuted,
-    marginTop: 2,
-    maxWidth: 240,
-  },
   cardHeading: {
-    fontSize: 14,
+    fontSize: DESIGN_TOKENS.typography.fontSize.micro,
     fontWeight: '700',
-    color: THEME.colors.textMuted,
+    color: DESIGN_TOKENS.colors.textSubtle,
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: THEME.spacing.xs,
   },
-  earningsValue: {
-    fontSize: 32,
+  viewHistoryLink: {
+    fontSize: DESIGN_TOKENS.typography.fontSize.caption,
+    color: DESIGN_TOKENS.colors.secondary,
+    fontWeight: '700',
+  },
+  earningsAmount: {
+    fontSize: 38,
     fontWeight: '900',
-    color: THEME.colors.primary,
-    marginVertical: 4,
+    color: DESIGN_TOKENS.colors.secondary,
+    marginVertical: DESIGN_TOKENS.spacing.xs,
   },
   statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: THEME.spacing.sm,
-    paddingTop: THEME.spacing.sm,
+    justifyContent: 'space-around',
+    marginTop: DESIGN_TOKENS.spacing.sm,
+    paddingTop: DESIGN_TOKENS.spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: THEME.colors.border,
+    borderTopColor: DESIGN_TOKENS.colors.surfaceBorder,
   },
   statBox: {
     alignItems: 'center',
   },
-  statNumber: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: THEME.colors.text,
+  statVal: {
+    fontSize: DESIGN_TOKENS.typography.fontSize.bodySm,
+    fontWeight: '800',
+    color: DESIGN_TOKENS.colors.text,
   },
-  statLabel: {
-    fontSize: 11,
-    color: THEME.colors.textMuted,
+  statLbl: {
+    fontSize: DESIGN_TOKENS.typography.fontSize.micro,
+    color: DESIGN_TOKENS.colors.textMuted,
     marginTop: 2,
   },
-  radarActive: {
-    paddingVertical: THEME.spacing.md,
-    alignItems: 'center',
+  statDivider: {
+    width: 1,
+    height: '70%',
+    backgroundColor: DESIGN_TOKENS.colors.surfaceBorder,
   },
-  radarPulse: {
+  radarCard: {
+    padding: DESIGN_TOKENS.spacing.base,
+  },
+  radarActiveBox: {
+    alignItems: 'center',
+    paddingVertical: DESIGN_TOKENS.spacing.md,
+  },
+  radarPulseIndicator: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: THEME.colors.primary,
-    marginBottom: 8,
+    backgroundColor: DESIGN_TOKENS.colors.secondary,
+    marginBottom: DESIGN_TOKENS.spacing.xs,
   },
-  radarText: {
-    fontSize: 13,
-    color: THEME.colors.primary,
-    fontWeight: '600',
+  radarActiveText: {
+    fontSize: DESIGN_TOKENS.typography.fontSize.bodySm,
+    fontWeight: '700',
+    color: DESIGN_TOKENS.colors.secondary,
   },
-  radarMuted: {
-    fontSize: 12,
-    color: THEME.colors.textMuted,
-    paddingVertical: THEME.spacing.sm,
+  radarSubText: {
+    fontSize: DESIGN_TOKENS.typography.fontSize.micro,
+    color: DESIGN_TOKENS.colors.textMuted,
+    marginTop: 2,
   },
-  docHeader: {
+  radarMutedBox: {
+    paddingVertical: DESIGN_TOKENS.spacing.md,
+    alignItems: 'center',
+  },
+  radarMutedText: {
+    fontSize: DESIGN_TOKENS.typography.fontSize.caption,
+    color: DESIGN_TOKENS.colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  devSimBox: {
+    backgroundColor: '#0F172A',
+    borderRadius: DESIGN_TOKENS.borderRadius.md,
+    padding: DESIGN_TOKENS.spacing.sm,
+    borderWidth: 1,
+    borderColor: DESIGN_TOKENS.colors.surfaceBorder,
+    marginTop: DESIGN_TOKENS.spacing.sm,
+  },
+  devSimTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
+  verificationCard: {
+    padding: DESIGN_TOKENS.spacing.base,
+  },
+  verifyRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  badgeApproved: {
-    backgroundColor: '#065F46',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: THEME.borderRadius.sm,
-  },
-  badgeText: {
-    color: '#34D399',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  docDetail: {
-    fontSize: 12,
-    color: THEME.colors.textMuted,
-    marginTop: 4,
-  },
-  footer: {
-    alignItems: 'center',
-    marginTop: THEME.spacing.md,
-    paddingBottom: THEME.spacing.lg,
-  },
-  footerText: {
-    color: THEME.colors.textMuted,
-    fontSize: 12,
-  },
-  footerSub: {
-    color: THEME.colors.primary,
-    fontSize: 11,
-    fontWeight: 'bold',
+  verifyDetail: {
+    fontSize: DESIGN_TOKENS.typography.fontSize.bodySm,
+    color: DESIGN_TOKENS.colors.text,
+    fontWeight: '600',
     marginTop: 2,
-    textTransform: 'uppercase',
   },
 });

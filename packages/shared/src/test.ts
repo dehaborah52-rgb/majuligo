@@ -6,6 +6,8 @@ import {
   calculateFare,
   UserRole,
   RideStatus,
+  DESIGN_TOKENS,
+  translate,
 } from './index.js';
 
 test('PhoneSchema validates and normalizes Indian mobile numbers', () => {
@@ -58,14 +60,8 @@ test('calculateFare returns accurate fare and captain earnings', () => {
     distanceKm: 10.0,
     durationMinutes: 20,
   });
-  // Base fare: 20
-  // Extra km: 10 - 1.5 = 8.5 km * 10 = 85
-  // Time: 20 mins * 1 = 20
-  // Subtotal = 20 + 85 + 20 = 125
   assert.equal(typicalRide.totalFare, 125);
-  // Platform commission: 15% of 125 = 19
   assert.equal(typicalRide.platformCommission, 19);
-  // Captain earnings: 125 - 19 = 106
   assert.equal(typicalRide.captainEarnings, 106);
 });
 
@@ -77,4 +73,25 @@ test('RideStatus enum has all required states', () => {
   assert.equal(RideStatus.IN_PROGRESS, 'IN_PROGRESS');
   assert.equal(RideStatus.COMPLETED, 'COMPLETED');
   assert.equal(RideStatus.CANCELLED, 'CANCELLED');
+});
+
+test('DESIGN_TOKENS exports accessible color and touch dimensions', () => {
+  assert.equal(DESIGN_TOKENS.colors.primary, '#F59E0B');
+  assert.equal(DESIGN_TOKENS.colors.secondary, '#10B981');
+  assert.equal(DESIGN_TOKENS.touchTarget.minHeight, 48);
+  assert.equal(DESIGN_TOKENS.touchTarget.minWidth, 48);
+});
+
+test('translate returns localized strings and falls back gracefully', () => {
+  // English
+  assert.equal(translate('brandName', 'en'), 'MajuliGo');
+  assert.equal(translate('confirmBooking', 'en'), 'Book MajuliGo Bike Taxi');
+
+  // Assamese
+  assert.equal(translate('brandName', 'as'), 'মাজুলী গ’');
+  assert.equal(translate('confirmBooking', 'as'), 'বাইক টেক্সি বুক কৰক');
+
+  // Hindi
+  assert.equal(translate('brandName', 'hi'), 'माजुली गो');
+  assert.equal(translate('confirmBooking', 'hi'), 'बाइक टैक्सी बुक करें');
 });

@@ -1,16 +1,17 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Users,
   Bike,
   Route,
   TrendingUp,
-  MapPin,
-  Clock,
   CheckCircle2,
-  AlertCircle,
+  FileCheck2,
+  Calculator,
 } from 'lucide-react';
+import { KYCReviewModal, KYCApplication } from '../components/KYCReviewModal';
+import { FareSimulatorDrawer } from '../components/FareSimulatorDrawer';
 
 const stats = [
   {
@@ -83,11 +84,44 @@ const mockRides = [
   },
 ];
 
+const samplePendingKYC: KYCApplication = {
+  id: 'KYC-501',
+  captainName: 'Manabendra Nath',
+  phone: '9435091823',
+  dlNumber: 'AS-03-2021008291',
+  dlExpiry: '2036-08-14',
+  vehicleModel: 'Bajaj Pulsar 150',
+  vehiclePlate: 'AS-03-B-8910',
+  submittedAt: 'Today, 10:15 AM',
+};
+
 export default function AdminDashboardPage() {
+  const [filter, setFilter] = useState<'ALL' | 'SEARCHING' | 'IN_PROGRESS' | 'COMPLETED'>('ALL');
+  const [isKYCModalOpen, setIsKYCModalOpen] = useState(false);
+  const [isFareDrawerOpen, setIsFareDrawerOpen] = useState(false);
+  const [kycSuccessMessage, setKycSuccessMessage] = useState<string | null>(null);
+
+  const filteredRides =
+    filter === 'ALL'
+      ? mockRides
+      : mockRides.filter((r) => r.status === filter);
+
+  const handleApproveKYC = (id: string) => {
+    setIsKYCModalOpen(false);
+    setKycSuccessMessage(`Captain application #${id} successfully approved and activated!`);
+    setTimeout(() => setKycSuccessMessage(null), 4000);
+  };
+
+  const handleRejectKYC = (id: string, reason: string) => {
+    setIsKYCModalOpen(false);
+    setKycSuccessMessage(`Captain application #${id} rejected: ${reason}`);
+    setTimeout(() => setKycSuccessMessage(null), 4000);
+  };
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Top Banner */}
-      <div className="flex items-center justify-between">
+      {/* Top Banner & Quick Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Majuli Operations Overview
@@ -97,11 +131,30 @@ export default function AdminDashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 text-slate-950">
-            Phase 1 Foundation Active
-          </span>
+          <button
+            onClick={() => setIsFareDrawerOpen(true)}
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 shadow-sm transition-colors"
+          >
+            <Calculator className="w-3.5 h-3.5 text-amber-500" />
+            <span>Fare Simulator</span>
+          </button>
+          <button
+            onClick={() => setIsKYCModalOpen(true)}
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-lg bg-amber-500 text-slate-950 hover:bg-amber-400 shadow-sm transition-colors"
+          >
+            <FileCheck2 className="w-3.5 h-3.5" />
+            <span>Review Pending KYC (1)</span>
+          </button>
         </div>
       </div>
+
+      {/* KYC Alert Message */}
+      {kycSuccessMessage && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+          <span>{kycSuccessMessage}</span>
+        </div>
+      )}
 
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -129,14 +182,28 @@ export default function AdminDashboardPage() {
 
       {/* Live Rides Feed */}
       <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-slate-200 flex items-center justify-between">
+        <div className="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h2 className="text-base font-bold text-slate-900">Recent & Active Island Trips</h2>
             <p className="text-xs text-slate-500 mt-0.5">Live status streamed via Socket.io</p>
           </div>
-          <button className="text-xs font-semibold text-amber-600 hover:text-amber-700">
-            View All Rides →
-          </button>
+
+          {/* Filter Pills */}
+          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg">
+            {(['ALL', 'SEARCHING', 'IN_PROGRESS', 'COMPLETED'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setFilter(tab)}
+                className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
+                  filter === tab
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                {tab.replace('_', ' ')}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -153,7 +220,7 @@ export default function AdminDashboardPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              {mockRides.map((ride) => (
+              {filteredRides.map((ride) => (
                 <tr key={ride.id} className="hover:bg-slate-50/60 transition-colors">
                   <td className="py-3.5 px-5 font-mono font-semibold text-slate-900">
                     {ride.id}
@@ -179,6 +246,21 @@ export default function AdminDashboardPage() {
           </table>
         </div>
       </div>
+
+      {/* KYC Review Modal */}
+      <KYCReviewModal
+        application={samplePendingKYC}
+        isOpen={isKYCModalOpen}
+        onClose={() => setIsKYCModalOpen(false)}
+        onApprove={handleApproveKYC}
+        onReject={handleRejectKYC}
+      />
+
+      {/* Fare Simulator Drawer */}
+      <FareSimulatorDrawer
+        isOpen={isFareDrawerOpen}
+        onClose={() => setIsFareDrawerOpen(false)}
+      />
     </div>
   );
 }
