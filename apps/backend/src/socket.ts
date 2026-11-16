@@ -1,10 +1,31 @@
+import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import { SOCKET_EVENTS, LocationUpdateSchema } from '@majuligo/shared';
 
+let ioInstance: Server | null = null;
+
+export function initSocketServer(server: HttpServer): Server {
+  if (!ioInstance) {
+    ioInstance = new Server(server, {
+      cors: {
+        origin: '*',
+        methods: ['GET', 'POST'],
+      },
+    });
+
+    setupSocketServer(ioInstance);
+  }
+  return ioInstance;
+}
+
+export function emitRideEvent(event: string, data: any) {
+  if (ioInstance) {
+    ioInstance.emit(event, data);
+  }
+}
+
 export function setupSocketServer(io: Server) {
   io.on('connection', (socket: Socket) => {
-    console.log(`🔌 Client connected: [${socket.id}]`);
-
     // Handle authentication / role assignment
     socket.on(SOCKET_EVENTS.AUTHENTICATE, (data: { userId: string; role: string }) => {
       socket.data.userId = data.userId;
@@ -13,7 +34,6 @@ export function setupSocketServer(io: Server) {
       if (data.role === 'CAPTAIN') {
         socket.join('captains:online');
       }
-      console.log(`Authenticated socket [${socket.id}] as ${data.role} (${data.userId})`);
     });
 
     // Handle Captain Location Updates
@@ -30,7 +50,6 @@ export function setupSocketServer(io: Server) {
         timestamp: Date.now(),
       };
 
-      // Broadcast to room of active ride or nearby searchers
       io.emit(SOCKET_EVENTS.CAPTAIN_STATE_CHANGED, update);
     });
 
@@ -41,11 +60,6 @@ export function setupSocketServer(io: Server) {
       } else {
         socket.leave('captains:online');
       }
-      console.log(`Captain [${socket.data.userId || socket.id}] is now online=${data.isOnline}`);
-    });
-
-    socket.on('disconnect', () => {
-      console.log(`🔌 Client disconnected: [${socket.id}]`);
     });
   });
 }

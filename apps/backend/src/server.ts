@@ -1,67 +1,61 @@
-import Fastify from 'fastify';
+import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
-import sensible from '@fastify/sensible';
-import { Server as SocketIOServer } from 'socket.io';
-import { config } from './config.js';
-import { healthRoutes } from './routes/health.js';
+import rateLimit from '@fastify/rate-limit';
+import { createServer, Server as HttpServer } from 'http';
+import { initSocketServer } from './socket.js';
 import { authRoutes } from './routes/auth.js';
 import { rideRoutes } from './routes/rides.js';
-import { setupSocketServer } from './socket.js';
+import { userRoutes } from './routes/users.js';
+import { captainRoutes } from './routes/captains.js';
+import { healthRoutes } from './routes/health.js';
 
-export async function createBackendServer() {
+export function buildServer(): { app: FastifyInstance; server: HttpServer } {
   const app = Fastify({
-    logger: {
-      level: config.NODE_ENV === 'test' ? 'silent' : 'info',
-    },
+    logger: process.env.NODE_ENV !== 'test',
   });
 
-  // Security Plugins
-  await app.register(helmet, {
-    contentSecurityPolicy: false, // Permissive for local development APIs
+  // Security Headers via Helmet
+  app.register(helmet, {
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
   });
 
-  await app.register(cors, {
-    origin: (origin, cb) => {
-      // In development, allow all localhost or mobile app requests
-      if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
-        return cb(null, true);
-      }
-      cb(null, true);
-    },
-    credentials: true,
+  // CORS for Admin Portal and Mobile Web Testing
+  app.register(cors, {
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
-  await app.register(sensible);
+  // Rate Limiting (Brute-force protection for OTP and Booking)
+  app.register(rateLimit, {
+    max: 100,
+    timeWindow: '1 minute',
+  });
 
-  // Register REST Routes
-  await app.register(healthRoutes);
-  await app.register(authRoutes);
-  await app.register(rideRoutes);
+  // Register Routes
+  app.register(healthRoutes);
+  app.register(authRoutes, { prefix: '/api/v1/auth' });
+  app.register(userRoutes, { prefix: '/api/v1/users' });
+  app.register(captainRoutes, { prefix: '/api/v1/captains' });
+  app.register(rideRoutes, { prefix: '/api/v1/rides' });
 
-  return app;
+  // Attach Socket.io to Node HTTP Server
+  const server = createServer(app.server);
+  initSocketServer(server);
+
+  return { app, server };
 }
 
 export async function startServer() {
-  const app = await createBackendServer();
+  const { app, server } = buildServer();
+  const PORT = parseInt(process.env.PORT || '4000', 10);
+  const HOST = process.env.HOST || '0.0.0.0';
+
   await app.ready();
 
-  // Attach Socket.io to Fastify's raw HTTP server
-  const io = new SocketIOServer(app.server, {
-    cors: {
-      origin: '*',
-      methods: ['GET', 'POST'],
-    },
+  server.listen(PORT, HOST, () => {
+    console.log(`\n🚀 MajuliGo Backend API running at http://${HOST}:${PORT}`);
+    console.log(`📡 WebSocket Real-time Engine initialized.\n`);
   });
-
-  setupSocketServer(io);
-
-  try {
-    await app.listen({ port: config.PORT, host: config.HOST });
-    console.log(`\n🚀 MajuliGo Backend API running at http://${config.HOST}:${config.PORT}`);
-    console.log(`📡 WebSocket Real-time Engine initialized.`);
-  } catch (err) {
-    app.log.error(err);
-    process.exit(1);
-  }
 }
